@@ -6,6 +6,6 @@ class RabotnikTest < Minitest::Test
     capture_todo = Rabotnik::CaptureTodo.new(text: 'write tests')
     result = app.handle_command(capture_todo)
     assert_nil result.errors
-    assert_equals [:todo_captured, result.events.first.name]
+    assert_equal(:todo_captured, result.events.first.event_name)
   end
 end
