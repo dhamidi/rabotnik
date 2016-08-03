@@ -27,4 +27,14 @@ class RabotnikTest < Minitest::Test
 
     assert_equal('write tests', result.events.first.text)
   end
+
+  def test_rabotnik_query_todos_lists_all_todos
+    app = Rabotnik::App.new
+    app.handle_command(Rabotnik::CaptureTodo.new(text: 'a todo'))
+    app.handle_command(Rabotnik::CaptureTodo.new(text: 'another todo'))
+    todos = app.query(:todos)
+
+    refute_nil(todos, "No todos returned")
+    assert_equal(['a todo', 'another todo'], todos.all.map(&:text))
+  end
 end
