@@ -37,4 +37,15 @@ class RabotnikTest < Minitest::Test
     refute_nil(todos, "No todos returned")
     assert_equal(['a todo', 'another todo'], todos.all.map(&:text))
   end
+
+  def test_rabotnik_handle_command_stores_events_in_event_store
+    event_store = Rabotnik::InMemoryEventStore.new
+    app = Rabotnik::App.new(event_store: event_store)
+
+    app.handle_command(Rabotnik::CaptureTodo.new(text: 'a todo'))
+
+    seen = []
+    event_store.each {|event| seen << event }
+    assert_equal(['a todo'], seen.map(&:text))
+  end
 end
