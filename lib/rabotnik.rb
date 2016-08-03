@@ -3,12 +3,14 @@ require 'securerandom'
 
 module Rabotnik
   class App
-    def initialize
+    def initialize(event_store: InMemoryEventStore.new)
       @todos = Views::Todos.new
+      @event_store = event_store
     end
 
     def handle_command(command)
       event = TodoCaptured.new(todo_id: SecureRandom.uuid, text: command.text)
+      @event_store.append event
       @todos.handle_event event
       Result.new([event], nil)
     end
