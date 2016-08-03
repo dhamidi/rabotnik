@@ -54,3 +54,5 @@ module Rabotnik
     def event_name; :todo_captured; end
   end
 end
+
+require 'rabotnik/in_memory_event_store'
