@@ -19,4 +19,12 @@ class RabotnikTest < Minitest::Test
 
     refute_equal(first_id, second_id, "todo IDs needs to differ")
   end
+
+  def test_rabotnik_capturing_a_todo_records_the_text_of_the_todo
+    app = Rabotnik::App.new
+    capture_todo = Rabotnik::CaptureTodo.new(text: 'write tests')
+    result = app.handle_command(capture_todo)
+
+    assert_equal('write tests', result.events.first.text)
+  end
 end
