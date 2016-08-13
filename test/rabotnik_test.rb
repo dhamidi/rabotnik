@@ -28,6 +28,14 @@ class RabotnikTest < Minitest::Test
     assert_equal('write tests', result.events.first.text)
   end
 
+  def test_rabotnik_marking_a_todo_as_completed_fails_if_todo_has_not_been_captured
+    app = Rabotnik::App.new
+    mark_as_completed = Rabotnik::MarkTodoAsCompleted.new(todo_id: '1')
+    result = app.handle_command(mark_as_completed)
+
+    assert_equal([:todo_not_found], result.errors)
+  end
+
   def test_rabotnik_query_todos_lists_all_todos
     app = Rabotnik::App.new
     app.handle_command(Rabotnik::CaptureTodo.new(text: 'a todo'))

@@ -9,10 +9,12 @@ module Rabotnik
     end
 
     def handle_command(command)
-      event = TodoCaptured.new(todo_id: SecureRandom.uuid, text: command.text)
-      @event_store.append event
-      @todos.handle_event event
-      Result.new([event], nil)
+      result = command.execute
+      result.events.each do |event|
+        @event_store.append event
+        @todos.handle_event event
+      end
+      result
     end
 
     def query(view)
@@ -43,6 +45,12 @@ module Rabotnik
     def initialize(text:)
       @text = text
     end
+
+    def execute
+      Result.new([TodoCaptured.new(todo_id: SecureRandom.uuid,
+                                   text: text)],
+                 nil)
+    end
   end
 
   class TodoCaptured
@@ -54,6 +62,17 @@ module Rabotnik
     end
 
     def event_name; :todo_captured; end
+  end
+
+  class MarkTodoAsCompleted
+    attr_reader :todo_id
+    def initialize(todo_id:)
+      @todo_id = todo_id
+    end
+
+    def execute
+      Result.new([], [:todo_not_found])
+    end
   end
 end
 
