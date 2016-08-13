@@ -6,10 +6,12 @@ module Rabotnik
     def initialize(event_store: InMemoryEventStore.new)
       @todos = Views::Todos.new
       @event_store = event_store
+
+      replay_history!
     end
 
     def handle_command(command)
-      result = command.execute
+      result = command.execute(self)
       result.events.each do |event|
         @event_store.append event
         @todos.handle_event event
@@ -20,13 +22,21 @@ module Rabotnik
     def query(view)
       @todos
     end
+
+    private
+
+    def replay_history!
+      @event_store.each do |event|
+        @todos.handle_event event
+      end
+    end
   end
 
   Result = Struct.new(:events, :errors)
 
   module Views
     class Todos
-      Todo = Struct.new(:text)
+      Todo = Struct.new(:id, :text)
 
       attr_reader :all
 
@@ -34,8 +44,14 @@ module Rabotnik
         @all = []
       end
 
+      def find_by_id(id)
+        @all.find { |todo| todo.id == id }
+      end
+
       def handle_event(event)
-        @all << Todo.new(event.text)
+        if event.event_name == :todo_captured
+          @all << Todo.new(event.todo_id, event.text)
+        end
       end
     end
   end
@@ -46,7 +62,7 @@ module Rabotnik
       @text = text
     end
 
-    def execute
+    def execute(application)
       Result.new([TodoCaptured.new(todo_id: SecureRandom.uuid,
                                    text: text)],
                  nil)
@@ -70,9 +86,26 @@ module Rabotnik
       @todo_id = todo_id
     end
 
-    def execute
-      Result.new([], [:todo_not_found])
+    def execute(application)
+      todo = application.query(:todos).find_by_id(todo_id)
+
+      if todo
+        Result.new([TodoMarkedAsCompleted.new(todo_id: todo_id)],
+                   nil)
+      else
+        Result.new([], [:todo_not_found])
+      end
     end
+  end
+
+  class TodoMarkedAsCompleted
+    attr_reader :todo_id
+
+    def initialize(todo_id:)
+      @todo_id = todo_id
+    end
+
+    def event_name; :todo_marked_as_completed; end
   end
 end
 

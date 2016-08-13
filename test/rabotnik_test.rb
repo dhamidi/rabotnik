@@ -36,6 +36,29 @@ class RabotnikTest < Minitest::Test
     assert_equal([:todo_not_found], result.errors)
   end
 
+  def test_rabotnik_marking_a_todo_as_completed_returns_event_if_todo_has_been_captured_before
+    event_store = Rabotnik::InMemoryEventStore.new
+
+    todo_id = "47b4851f-19d0-4f88-b8e5-e921bcd890c2"
+    captured = Rabotnik::TodoCaptured.new(
+      todo_id: todo_id,
+      text: 'test',
+    )
+    event_store.append(captured)
+
+    app = Rabotnik::App.new(event_store: event_store)
+
+    mark_as_completed = Rabotnik::MarkTodoAsCompleted.new(todo_id: todo_id)
+
+    result = app.handle_command(mark_as_completed)
+
+    assert_nil result.errors
+
+    completed = result.events.first
+    assert_equal :todo_marked_as_completed, completed.event_name
+    assert_equal todo_id, completed.todo_id
+  end
+
   def test_rabotnik_query_todos_lists_all_todos
     app = Rabotnik::App.new
     app.handle_command(Rabotnik::CaptureTodo.new(text: 'a todo'))
