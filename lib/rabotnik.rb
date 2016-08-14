@@ -36,7 +36,11 @@ module Rabotnik
 
   module Views
     class Todos
-      Todo = Struct.new(:id, :text)
+      Todo = Struct.new(:id, :text, :state) do
+        def completed?
+          state == :completed
+        end
+      end
 
       attr_reader :all
 
@@ -49,8 +53,11 @@ module Rabotnik
       end
 
       def handle_event(event)
-        if event.event_name == :todo_captured
+        case event.event_name
+        when :todo_captured
           @all << Todo.new(event.todo_id, event.text)
+        when :todo_marked_as_completed
+          find_by_id(event.todo_id).state = :completed
         end
       end
     end

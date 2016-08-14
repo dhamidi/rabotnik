@@ -69,6 +69,17 @@ class RabotnikTest < Minitest::Test
     assert_equal(['a todo', 'another todo'], todos.all.map(&:text))
   end
 
+  def test_rabotnik_query_todos_marks_completed_todos
+    app = Rabotnik::App.new
+    app.handle_command(Rabotnik::CaptureTodo.new(text: 'a todo'))
+    app.handle_command(Rabotnik::CaptureTodo.new(text: 'another todo'))
+    todos = app.query(:todos)
+    to_complete = todos.all.first
+    app.handle_command(Rabotnik::MarkTodoAsCompleted.new(todo_id: to_complete.id))
+
+    assert todos.find_by_id(to_complete.id).completed?
+  end
+
   def test_rabotnik_handle_command_stores_events_in_event_store
     event_store = Rabotnik::InMemoryEventStore.new
     app = Rabotnik::App.new(event_store: event_store)
